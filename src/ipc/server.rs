@@ -21,9 +21,9 @@ pub struct IpcServer {
     pub socket_path: PathBuf,
 }
 
-struct ClientCtx {
+pub struct ClientCtx {
     event_loop: LoopHandle<'static, State>,
-    ipc_outputs: Rc<RefCell<HashMap<String, niri_ipc::Output>>>,
+    pub ipc_outputs: Rc<RefCell<HashMap<String, niri_ipc::Output>>>,
 }
 
 impl IpcServer {
@@ -125,9 +125,20 @@ fn process(ctx: &ClientCtx, buf: &str) -> anyhow::Result<Response> {
     let request: Request = serde_json::from_str(buf).context("error parsing request")?;
 
     let response = match request {
-        Request::Outputs => {
-            let ipc_outputs = ctx.ipc_outputs.borrow().clone();
-            Response::Outputs(ipc_outputs)
+        Request::Outputs(outputs) => {
+            let outputs = niri_config::Outputs::from(outputs);
+            match outputs {
+                niri_config::Outputs::List => {
+                    let ipc_outputs = ctx.ipc_outputs.borrow().clone();
+                    Response::Outputs(ipc_outputs)
+                }
+                _ => {
+                    ctx.event_loop.insert_idle(move |state| {
+                        state.do_monitor_manipulation(outputs);
+                    });
+                    Response::Handled
+                }
+            }
         }
         Request::Action(action) => {
             let action = niri_config::Action::from(action);

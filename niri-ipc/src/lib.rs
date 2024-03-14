@@ -12,8 +12,8 @@ pub const SOCKET_PATH_ENV: &str = "NIRI_SOCKET";
 /// Request from client to niri.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Request {
-    /// Request information about connected outputs.
-    Outputs,
+    /// Request information about or manipulate connected outputs.
+    Outputs(Outputs),
     /// Perform an action.
     Action(Action),
 }
@@ -37,6 +37,28 @@ pub enum Response {
     ///
     /// Map from connector name to output info.
     Outputs(HashMap<String, Output>),
+}
+
+/// Listing or manipulating outputs.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "clap", derive(clap::Parser))]
+#[cfg_attr(feature = "clap", command(subcommand_value_name = "OUTPUTS"))]
+#[cfg_attr(feature = "clap", command(subcommand_help_heading = "Outputs"))]
+pub enum Outputs {
+    /// List connected outputs.
+    List,
+    /// Turns an output on.
+    On {
+        /// Name of the output to enable.
+        #[cfg_attr(feature = "clap", arg(required = true))]
+        output_name: String,
+    },
+    /// Turns an output off.
+    Off {
+        /// Name of the output to disable.
+        #[cfg_attr(feature = "clap", arg(required = true))]
+        output_name: String,
+    },
 }
 
 /// Actions that niri can perform.

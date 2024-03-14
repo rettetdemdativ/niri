@@ -1413,23 +1413,26 @@ impl Niri {
         self.queue_redraw(output);
     }
 
-    pub fn deactivate_monitors(&mut self, backend: &mut Backend) {
+    pub fn deactivate_monitors(&mut self, backend: &mut Backend, monitor_name: String) {
         if !self.monitors_active {
             return;
         }
 
+        // TODO: only if no monitors are active
         self.monitors_active = false;
-        backend.set_monitors_active(false);
+
+        backend.set_monitors_active(false, monitor_name);
     }
 
-    pub fn activate_monitors(&mut self, backend: &mut Backend) {
+    pub fn activate_monitors(&mut self, backend: &mut Backend, monitor_name: String) {
         if self.monitors_active {
             return;
         }
 
         self.monitors_active = true;
-        backend.set_monitors_active(true);
+        backend.set_monitors_active(true, monitor_name);
 
+        // TODO: adapt
         self.queue_redraw_all();
     }
 

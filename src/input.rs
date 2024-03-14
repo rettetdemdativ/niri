@@ -3,8 +3,8 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use input::event::gesture::GestureEventCoordinates as _;
-use niri_config::{Action, Binds, Modifiers};
-use niri_ipc::LayoutSwitchTarget;
+use niri_config::{Action, Binds, Modifiers, Outputs};
+use niri_ipc::{LayoutSwitchTarget, Response};
 use smithay::backend::input::{
     AbsolutePositionEvent, Axis, AxisSource, ButtonState, Device, DeviceCapability, Event,
     GestureBeginEvent, GestureEndEvent, GesturePinchUpdateEvent as _, GestureSwipeUpdateEvent as _,
@@ -24,6 +24,7 @@ use smithay::utils::{Logical, Point, SERIAL_COUNTER};
 use smithay::wayland::pointer_constraints::{with_pointer_constraint, PointerConstraint};
 use smithay::wayland::tablet_manager::{TabletDescriptor, TabletSeatTrait};
 
+use crate::ipc::server::ClientCtx;
 use crate::niri::State;
 use crate::ui::screenshot_ui::ScreenshotUi;
 use crate::utils::spawning::spawn;
@@ -63,7 +64,7 @@ impl State {
         } else {
             // Power on monitors if they were off.
             if should_activate_monitors(&event) {
-                self.niri.activate_monitors(&mut self.backend);
+                self.niri.activate_monitors(&mut self.backend, "all".to_string());
 
                 // Notify the idle-notifier of activity only if we're also powering on the
                 // monitors.
@@ -292,6 +293,26 @@ impl State {
         self.do_action(action);
     }
 
+    pub fn do_monitor_manipulation(&mut self, outputs: Outputs) {
+        /*if self.niri.is_locked() && !allowed_when_locked(&action) {
+        return;
+        }*/
+
+        if let Some(touch) = self.niri.seat.get_touch() {
+            touch.cancel(self);
+        }
+
+        match outputs {
+            Outputs::On(output_name) => {
+                self.niri.activate_monitors(&mut self.backend, output_name);
+            }
+            Outputs::Off(output_name) => {
+                self.niri.deactivate_monitors(&mut self.backend, output_name);
+            }
+            _ => return,
+        }
+    }
+
     pub fn do_action(&mut self, action: Action) {
         if self.niri.is_locked() && !allowed_when_locked(&action) {
             return;
@@ -326,7 +347,7 @@ impl State {
                 self.niri.suppressed_keys.clear();
             }
             Action::PowerOffMonitors => {
-                self.niri.deactivate_monitors(&mut self.backend);
+                self.niri.deactivate_monitors(&mut self.backend, "all".to_string());
             }
             Action::ToggleDebugTint => {
                 self.backend.toggle_debug_tint();

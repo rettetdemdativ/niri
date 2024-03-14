@@ -702,6 +702,13 @@ bitflags! {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Outputs {
+    List,
+    On(String),
+    Off(String),
+}
+
 // Remember to add new actions to the CLI enum too.
 #[derive(knuffel::Decode, Debug, Clone, PartialEq)]
 pub enum Action {
@@ -775,6 +782,16 @@ pub enum Action {
     MoveWorkspaceToMonitorRight,
     MoveWorkspaceToMonitorDown,
     MoveWorkspaceToMonitorUp,
+}
+
+impl From<niri_ipc::Outputs> for Outputs {
+    fn from(value: niri_ipc::Outputs) -> Self {
+        match value {
+            niri_ipc::Outputs::List => Self::List,
+            niri_ipc::Outputs::On { output_name } => Self::On(output_name),
+            niri_ipc::Outputs::Off { output_name } => Self::Off(output_name),
+        }
+    }
 }
 
 impl From<niri_ipc::Action> for Action {

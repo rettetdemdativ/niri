@@ -399,7 +399,7 @@ impl Tty {
 
                 niri.idle_notifier_state.notify_activity(&niri.seat);
                 niri.monitors_active = true;
-                self.set_monitors_active(true);
+                self.set_monitors_active(true, "all".to_string());
                 niri.queue_redraw_all();
             }
         }
@@ -824,7 +824,9 @@ impl Tty {
 
         // Power on all monitors if necessary and queue a redraw on the new one.
         niri.event_loop.insert_idle(move |state| {
-            state.niri.activate_monitors(&mut state.backend);
+            state
+                .niri
+                .activate_monitors(&mut state.backend, "all".to_string());
             state.niri.queue_redraw(output);
         });
 
@@ -1321,7 +1323,7 @@ impl Tty {
         self.devices.get(&self.primary_node).map(|d| d.gbm.clone())
     }
 
-    pub fn set_monitors_active(&mut self, active: bool) {
+    pub fn set_monitors_active(&mut self, active: bool, monitor_name: String) {
         // We only disable the CRTC here, this will also reset the
         // surface state so that the next call to `render_frame` will
         // always produce a new frame and `queue_frame` will change
@@ -1333,9 +1335,11 @@ impl Tty {
 
         for device in self.devices.values_mut() {
             for (crtc, surface) in device.surfaces.iter_mut() {
-                set_crtc_active(&device.drm, *crtc, false);
-                if let Err(err) = surface.compositor.reset_state() {
-                    warn!("error resetting surface state: {err:?}");
+                if monitor_name == "all" || monitor_name == surface.name {
+                    set_crtc_active(&device.drm, *crtc, false);
+                    if let Err(err) = surface.compositor.reset_state() {
+                        warn!("error resetting surface state: {err:?}");
+                    }
                 }
             }
         }

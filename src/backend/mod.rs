@@ -138,9 +138,9 @@ impl Backend {
         }
     }
 
-    pub fn set_monitors_active(&mut self, active: bool) {
+    pub fn set_monitors_active(&mut self, active: bool, monitor_name: String) {
         match self {
-            Backend::Tty(tty) => tty.set_monitors_active(active),
+            Backend::Tty(tty) => tty.set_monitors_active(active, monitor_name),
             Backend::Winit(_) => (),
         }
     }
