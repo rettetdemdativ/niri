@@ -101,9 +101,7 @@ pub fn handle_msg(msg: Msg, json: bool) -> anyhow::Result<()> {
                     println!();
                 }
             }
-            Response::Handled => {
-                bail!("unexpected response: expected Handled or Outputs, got {response:?}");
-            }
+            Response::Handled => {}
         },
         Msg::Action { .. } => {
             let Response::Handled = response else {
